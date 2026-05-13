@@ -1,0 +1,39 @@
+.filterRow { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px; }
+.pill { display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:99px;border:1px solid var(--border);background:var(--surface);font-size:.78rem;color:var(--text-2);cursor:pointer;transition:all .12s; }
+.pill:hover  { border-color:var(--accent);color:var(--accent); }
+.pillActive  { background:var(--accent);border-color:var(--accent);color:#fff; }
+.pillActive .pillCount { background:rgba(255,255,255,.25);color:#fff; }
+.pillCount { display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;background:var(--surface-2);border-radius:99px;font-size:.68rem;font-weight:500;color:var(--text-3); }
+.loading { display:flex;justify-content:center;padding:60px; }
+.grid    { display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px; }
+.userCard { display:flex;align-items:flex-start;gap:14px;padding:16px 18px!important; }
+.avatar { width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.95rem;font-weight:500;flex-shrink:0; }
+.info { display:flex;flex-direction:column;gap:3px;min-width:0;flex:1; }
+.name { font-size:.9rem;font-weight:500;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.facility { font-size:.78rem;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.bottom { display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;flex-wrap:wrap; }
+.wallet { font-size:.72rem;color:var(--text-3); }
+/* Form */
+.form { display:flex;flex-direction:column;gap:14px; }
+.formActions { display:flex;justify-content:flex-end;gap:8px;margin-top:4px; }
+.error { font-size:.8rem;color:var(--red);background:var(--red-light);padding:8px 12px;border-radius:var(--radius); }
+.noteBox { display:flex;align-items:flex-start;gap:9px;padding:10px 12px;background:var(--blue-light);border-radius:var(--radius);font-size:.8rem;color:var(--blue);line-height:1.5; }
+/* Credentials modal */
+.credBody { display:flex;flex-direction:column;gap:16px; }
+.credWarning { display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--amber-light);border-radius:var(--radius);font-size:.82rem;color:var(--amber);line-height:1.5;border:1px solid #f5c080; }
+.credUser { display:flex;align-items:center;gap:12px; }
+.credAvatar { width:36px;height:36px;border-radius:50%;background:var(--accent-light);color:var(--accent-text);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:500;flex-shrink:0; }
+.credName { font-size:.9rem;font-weight:500;margin-bottom:3px; }
+.credFields { display:flex;flex-direction:column;gap:10px; }
+.credField { background:var(--surface-2);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden; }
+.credFieldHeader { display:flex;align-items:center;justify-content:space-between;padding:7px 12px 0; }
+.credLabel { font-size:.7rem;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em; }
+.sensitiveTag { font-size:.65rem;font-weight:500;padding:1px 6px;background:var(--red-light);color:var(--red);border-radius:99px;text-transform:uppercase;letter-spacing:.04em; }
+.credValue { display:flex;align-items:center;gap:8px;padding:6px 12px 9px; }
+.credValueText { flex:1;font-size:.82rem;color:var(--text-1);word-break:break-all;line-height:1.4; }
+.copyBtn { display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:none;background:none;color:var(--text-3);border-radius:var(--radius);cursor:pointer;flex-shrink:0;transition:background .12s,color .12s; }
+.copyBtn:hover { background:var(--border);color:var(--text-1); }
+.copyBtnDone   { color:var(--accent); }
+.credActions { display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px; }
+.copyAllBtn { font-size:.82rem;color:var(--text-2);background:none;border:1px solid var(--border);border-radius:var(--radius);padding:7px 12px;cursor:pointer;transition:all .12s; }
+.copyAllBtn:hover { background:var(--surface-2);color:var(--text-1); }

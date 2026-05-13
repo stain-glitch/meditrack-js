@@ -1,0 +1,21 @@
+.shell { display:grid;grid-template-columns:220px 1fr;min-height:100vh; }
+.sidebar { background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto; }
+.logo { display:flex;align-items:center;gap:9px;padding:20px 18px 18px;border-bottom:1px solid var(--border); }
+.logoMark { display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:var(--accent);color:#fff;border-radius:7px;font-size:.72rem;font-weight:500;font-family:var(--mono);flex-shrink:0; }
+.logoText { font-size:.95rem;font-weight:500;letter-spacing:-.01em; }
+.nav { flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px; }
+.navGroup { margin-bottom:4px; }
+.navSection { display:block;font-size:.68rem;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3);padding:10px 10px 5px; }
+.navItem { display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:var(--radius);font-size:.85rem;color:var(--text-2);transition:background .12s,color .12s; }
+.navItem:hover { background:var(--surface-2);color:var(--text-1); }
+.navItemActive { background:var(--accent-light);color:var(--accent-text);font-weight:500; }
+.navItem svg { opacity:.7;flex-shrink:0; }
+.navItemActive svg { opacity:1; }
+.sidebarFooter { padding:14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px; }
+.userCard { flex:1;display:flex;align-items:center;gap:9px;min-width:0; }
+.userAvatar { width:30px;height:30px;border-radius:50%;background:var(--accent-light);color:var(--accent-text);font-size:.8rem;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.userInfo { display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden; }
+.userName { font-size:.8rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.logoutBtn { display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:none;background:none;color:var(--text-3);border-radius:var(--radius);transition:background .12s,color .12s;flex-shrink:0; }
+.logoutBtn:hover { background:var(--red-light);color:var(--red); }
+.main { padding:28px 32px;min-height:100vh;overflow-x:hidden; }

@@ -1,0 +1,57 @@
+.badge { display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:500;white-space:nowrap; }
+.badge_default { background:var(--surface-2);color:var(--text-2); }
+.badge_green   { background:var(--accent-light);color:var(--accent-text); }
+.badge_amber   { background:var(--amber-light);color:var(--amber); }
+.badge_red     { background:var(--red-light);color:var(--red); }
+.badge_blue    { background:var(--blue-light);color:var(--blue); }
+
+.btn { display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid transparent;border-radius:var(--radius);font-weight:500;transition:all .15s;white-space:nowrap; }
+.btn:disabled { opacity:.5;cursor:not-allowed; }
+.btn_primary   { background:var(--accent);color:#fff;border-color:var(--accent); }
+.btn_primary:hover:not(:disabled) { background:var(--accent-text); }
+.btn_secondary { background:var(--surface);color:var(--text-1);border-color:var(--border); }
+.btn_secondary:hover:not(:disabled) { background:var(--surface-2); }
+.btn_danger    { background:var(--red-light);color:var(--red);border-color:#f5c0c0; }
+.btn_danger:hover:not(:disabled) { background:#fad4d4; }
+.btn_ghost     { background:transparent;color:var(--text-2);border-color:transparent; }
+.btn_ghost:hover:not(:disabled) { background:var(--surface-2);color:var(--text-1); }
+.btn_sm  { font-size:.78rem;padding:5px 10px; }
+.btn_md  { font-size:.85rem;padding:8px 14px; }
+.btn_lg  { font-size:.9rem;padding:10px 20px; }
+
+.card    { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow); }
+.cardPad { padding:20px 22px; }
+
+.spinner { display:inline-block;border-radius:50%;border-style:solid;border-top-color:transparent;animation:spin .7s linear infinite;flex-shrink:0; }
+.spinner_sm  { width:13px;height:13px;border-width:2px; }
+.spinner_md  { width:20px;height:20px;border-width:2.5px; }
+.spinner_lg  { width:32px;height:32px;border-width:3px; }
+.spinner_dark  { border-color:var(--border-2);border-top-color:var(--text-2); }
+.spinner_white { border-color:rgba(255,255,255,.3);border-top-color:#fff; }
+.spinner_accent { border-color:var(--accent-light);border-top-color:var(--accent); }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.field { display:flex;flex-direction:column;gap:5px; }
+.label { font-size:.8rem;font-weight:500;color:var(--text-2); }
+.input { width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text-1);font-size:.875rem;transition:border-color .15s,box-shadow .15s;outline:none; }
+.input:focus { border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light); }
+.inputError { border-color:var(--red); }
+.textarea { resize:vertical;min-height:80px; }
+.fieldError { font-size:.75rem;color:var(--red); }
+
+.overlay { position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;animation:fadeIn .15s ease; }
+.modal { background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);width:100%;animation:slideUp .2s ease; }
+.modalHeader { display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border); }
+.modalTitle  { font-size:.95rem;font-weight:500; }
+.modalClose  { display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:none;background:none;color:var(--text-3);border-radius:var(--radius);transition:background .15s; }
+.modalClose:hover { background:var(--surface-2);color:var(--text-1); }
+.modalBody { padding:22px; }
+
+.empty { text-align:center;padding:48px 24px;color:var(--text-3);font-size:.875rem; }
+
+.pageHeader { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap; }
+.pageTitle    { font-size:1.25rem;font-weight:500;letter-spacing:-.01em; }
+.pageSubtitle { font-size:.85rem;color:var(--text-2);margin-top:3px; }
+
+@keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
+@keyframes slideUp { from { transform:translateY(12px);opacity:0 } to { transform:translateY(0);opacity:1 } }
