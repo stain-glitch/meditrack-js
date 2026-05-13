@@ -1,6 +1,5 @@
 # MediTrack — JavaScript Blockchain
-
-No Hardhat. No Solidity. No blockchain node. Just Node.js + PostgreSQL + React.
+Node.js + PostgreSQL + React.
 
 ## How it works
 
