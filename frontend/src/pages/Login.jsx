@@ -61,7 +61,6 @@ export default function Login() {
               <label className={styles.label}>Name or wallet address</label>
               <input
                 className={styles.input}
-                placeholder="e.g. System Admin"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 required autoFocus
@@ -72,7 +71,7 @@ export default function Login() {
               <input
                 className={styles.input}
                 type="password"
-                placeholder="meditrack123"
+                placeholder="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
@@ -85,26 +84,6 @@ export default function Login() {
               Sign in
             </Button>
           </form>
-
-          {/* Demo accounts */}
-          <div className={styles.demoSection}>
-            <p className={styles.demoTitle}>Demo accounts</p>
-            {loadingAcc ? (
-              <div className={styles.demoLoading}><Spinner size="sm" /><span>Loading...</span></div>
-            ) : accounts.length === 0 ? (
-              <p className={styles.demoHint}>Start the backend and run seed-users to see accounts here.</p>
-            ) : (
-              <div className={styles.demoGrid}>
-                {accounts.map(acc => (
-                  <button key={acc.wallet} className={styles.demoBtn} onClick={() => fillAccount(acc)} type="button">
-                    <span className={styles.demoRole} style={{ color: ROLE_COLOR[acc.role] || "#888" }}>{acc.role}</span>
-                    <span className={styles.demoName}>{acc.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            <p className={styles.demoNote}>All accounts use password: <code>meditrack123</code></p>
-          </div>
         </div>
       </div>
     </div>
