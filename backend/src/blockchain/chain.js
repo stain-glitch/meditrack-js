@@ -29,10 +29,12 @@ async function getLastHash(batchId) {
 }
 
 async function insertBlock(block, batchId) {
+  // Store data as JSON string so it round-trips cleanly through pg
+  const dataJson = JSON.stringify(block.data);
   const r = await pool.query(
     `INSERT INTO chain_blocks (hash, previous_hash, timestamp, data, batch_id)
-     VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-    [block.hash, block.previousHash, block.timestamp, block.data, batchId || null]
+     VALUES ($1,$2,$3,$4::jsonb,$5) RETURNING id`,
+    [block.hash, block.previousHash, block.timestamp, dataJson, batchId || null]
   );
   return r.rows[0].id;
 }
@@ -298,12 +300,18 @@ async function getRecentActivity(limit = 50) {
 // ── Row formatter ──────────────────────────────────────────────────────────
 
 function rowToBlock(row) {
+  // Ensure timestamp is always a plain integer (pg may return BIGINT as string)
+  const timestamp = parseInt(row.timestamp, 10);
+
+  // Ensure data is always a plain JS object, not a string
+  const data = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+
   return {
     id:           row.id,
     hash:         row.hash,
     previousHash: row.previous_hash,
-    timestamp:    Number(row.timestamp),
-    data:         typeof row.data === "string" ? JSON.parse(row.data) : row.data,
+    timestamp,
+    data,
     batchId:      row.batch_id,
   };
 }

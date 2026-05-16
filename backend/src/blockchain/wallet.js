@@ -20,12 +20,8 @@ function generateWallet() {
 
   const privateKey = "0x" + privateKeyBytes.toString("hex");
 
-  // Derive public key using secp256k1
-  const { createECDH } = crypto;
-  const ecdh = createECDH("prime256p1"); // fallback approach
-
-  // Use a deterministic approach: hash the private key bytes to get an address
-  // This produces a unique, reproducible address from the private key
+  // Derive a unique address by hashing the private key bytes.
+  // (Pure Node.js — no secp256k1 dependency needed for address generation.)
   const addressHash = crypto
     .createHash("sha256")
     .update(privateKeyBytes)

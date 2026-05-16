@@ -72,6 +72,21 @@ router.post("/seed-users", async (req, res) => {
 // ── GET /api/auth/me ──────────────────────────────────────────────────────
 router.get("/me", auth, (req, res) => res.json({ user: req.user }));
 
+// POST /api/auth/reset — wipe all chain data and reseed (dev only)
+router.post("/reset", async (req, res) => {
+  try {
+    await pool.query(`
+      TRUNCATE chain_blocks RESTART IDENTITY CASCADE;
+      TRUNCATE chain_batches RESTART IDENTITY CASCADE;
+      TRUNCATE chain_users RESTART IDENTITY CASCADE;
+      TRUNCATE users RESTART IDENTITY CASCADE;
+    `);
+    res.json({ message: "All chain data wiped. Now POST /api/auth/seed-users then /api/auth/seed-data" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
 
 
