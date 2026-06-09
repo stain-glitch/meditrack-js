@@ -106,18 +106,119 @@ function CredentialsModal({ open, onClose, credentials, user }) {
   );
 }
 
-const ROLES      = ["All","CMST","Pharmacist","HSA","Transporter","Regulator"];
+function UserActionModal({ open, onClose, onSuccess, user, action }) {
+  const [reason, setReason]   = useState("");
+  const [newPw,  setNewPw]    = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState(null);
+  const [result,  setResult]  = useState(null);
+
+  async function handleConfirm() {
+    setLoading(true); setError(null);
+    try {
+      let r;
+      if (action === "deactivate") {
+        r = await api.patch(`/users/${user.wallet}/deactivate`, { reason });
+      } else if (action === "reinstate") {
+        r = await api.patch(`/users/${user.wallet}/reinstate`);
+      } else if (action === "delete") {
+        r = await api.delete(`/users/${user.wallet}`);
+      } else if (action === "reset-password") {
+        r = await api.patch(`/users/${user.wallet}/reset-password`, { newPassword: newPw });
+        setResult(r.data.newPassword);
+        onSuccess(); return;
+      }
+      onSuccess(); onClose();
+    } catch (err) { setError(err.response?.data?.error || "Action failed"); }
+    finally { setLoading(false); }
+  }
+
+  if (!user) return null;
+
+  const configs = {
+    deactivate:     { title:"Deactivate account",   color:"var(--amber)", desc:`${user.name} will be suspended and unable to log in. You can reinstate them later.` },
+    reinstate:      { title:"Reinstate account",    color:"var(--accent)", desc:`${user.name}'s account will be reactivated and they will be able to log in again.` },
+    delete:         { title:"Delete account",       color:"var(--red)",   desc:`This will permanently delete ${user.name}'s account and cannot be undone.` },
+    "reset-password":{ title:"Reset password",      color:"var(--blue)",  desc:`A new password will be set for ${user.name}. Leave blank to use the default (meditrack123).` },
+  };
+  const cfg = configs[action] || {};
+
+  return (
+    <Modal open={open} onClose={onClose} title={cfg.title} width={460}>
+      <div className={styles.actionModalBody}>
+        <div className={styles.actionModalUser}>
+          <div className={styles.avatar} style={{ background: cfg.color + "18", color: cfg.color, width:44, height:44 }}>
+            {user.name?.charAt(0)}
+          </div>
+          <div>
+            <div className={styles.name}>{user.name}</div>
+            <div className={styles.facility}>{user.facility || user.role}</div>
+          </div>
+        </div>
+        <p className={styles.actionModalDesc}>{cfg.desc}</p>
+        {action === "deactivate" && (
+          <Input label="Reason (optional)" value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Staff on leave, account misuse..." />
+        )}
+        {action === "reset-password" && (
+          <Input label="New password (blank = meditrack123)" type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="meditrack123" />
+        )}
+        {error && <p className={styles.error}>{error}</p>}
+        <div className={styles.formActions}>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button
+            variant={action === "delete" ? "danger" : "primary"}
+            loading={loading}
+            onClick={handleConfirm}
+          >
+            {cfg.title}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function ResetPasswordResultModal({ open, onClose, password, userName }) {
+  const [copied, setCopied] = useState(false);
+  function copy() {
+    navigator.clipboard.writeText(password).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  }
+  return (
+    <Modal open={open} onClose={onClose} title="Password reset" width={400}>
+      <div className={styles.credBody}>
+        <p style={{ fontSize:".85rem", color:"var(--text-2)" }}>New password for <strong>{userName}</strong>:</p>
+        <div className={styles.credField}>
+          <div className={styles.credValue}>
+            <span className={styles.credValueText}>{password}</span>
+            <button className={`${styles.copyBtn} ${copied ? styles.copyBtnDone : ""}`} onClick={copy} type="button">
+              {copied
+                ? <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                : <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="5" y="1" width="9" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M11 12v2a1.5 1.5 0 0 1-1.5 1.5H2A1.5 1.5 0 0 1 .5 12.5v-8A1.5 1.5 0 0 1 2 3h2" stroke="currentColor" strokeWidth="1.3"/></svg>
+              }
+            </button>
+          </div>
+        </div>
+        <div className={styles.formActions}><Button onClick={onClose}>Done</Button></div>
+      </div>
+    </Modal>
+  );
+}
+
+const ROLES       = ["All","CMST","Pharmacist","HSA","Transporter","Regulator"];
 const ROLE_COLORS = { CMST:"#1a6b4a", Pharmacist:"#1a4a8a", HSA:"#92580a", Transporter:"#5f5e5a", Regulator:"#a02020" };
 
 export default function Users() {
   const { user: currentUser } = useAuth();
-  const [users,    setUsers]  = useState([]);
-  const [loading,  setLoading] = useState(true);
-  const [filter,   setFilter]  = useState("All");
-  const [showAdd,  setShowAdd] = useState(false);
-  const [creds,    setCreds]   = useState(null);
-  const [newUser,  setNewUser] = useState(null);
-  const [showCreds,setShowCreds] = useState(false);
+  const [users,     setUsers]     = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [filter,    setFilter]    = useState("All");
+  const [showAdd,   setShowAdd]   = useState(false);
+  const [creds,     setCreds]     = useState(null);
+  const [newUser,   setNewUser]   = useState(null);
+  const [showCreds, setShowCreds] = useState(false);
+  const [actionUser,setActionUser]= useState(null);
+  const [action,    setAction]    = useState(null);
+  const [pwResult,  setPwResult]  = useState(null);
 
   const isCMST = currentUser?.role === "CMST";
 
@@ -131,6 +232,16 @@ export default function Users() {
 
   function handleCreated(credentials, user) {
     setCreds(credentials); setNewUser(user); setShowCreds(true); load();
+  }
+
+  function openAction(user, act) { setActionUser(user); setAction(act); }
+
+  function handleActionSuccess(resetPw) {
+    load();
+    if (action === "reset-password" && resetPw) {
+      setPwResult(resetPw);
+    }
+    setActionUser(null); setAction(null);
   }
 
   const visible = filter === "All" ? users : users.filter(u => u.role === filter);
@@ -162,12 +273,15 @@ export default function Users() {
       ) : (
         <div className={styles.grid}>
           {visible.map(u => (
-            <Card key={u.wallet} className={styles.userCard}>
+            <Card key={u.wallet} className={`${styles.userCard} ${u.active === false ? styles.userCardInactive : ""}`}>
               <div className={styles.avatar} style={{ background:(ROLE_COLORS[u.role]||"#888")+"18", color:ROLE_COLORS[u.role]||"#888" }}>
                 {u.name.charAt(0).toUpperCase()}
               </div>
               <div className={styles.info}>
-                <span className={styles.name}>{u.name}</span>
+                <div className={styles.nameRow}>
+                  <span className={styles.name}>{u.name}</span>
+                  {u.active === false && <span className={styles.inactiveTag}>Suspended</span>}
+                </div>
                 <span className={styles.facility}>{u.facility || "—"}</span>
                 <div className={styles.bottom}>
                   <RoleBadge role={u.role} />
@@ -175,6 +289,17 @@ export default function Users() {
                     {u.wallet.slice(0,8)}…{u.wallet.slice(-4)}
                   </span>
                 </div>
+                {isCMST && u.wallet !== currentUser?.wallet && (
+                  <div className={styles.userActions}>
+                    {u.active !== false ? (
+                      <button className={styles.actionBtn} onClick={() => openAction(u, "deactivate")}>Suspend</button>
+                    ) : (
+                      <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={() => openAction(u, "reinstate")}>Reinstate</button>
+                    )}
+                    <button className={styles.actionBtn} onClick={() => openAction(u, "reset-password")}>Reset password</button>
+                    <button className={`${styles.actionBtn} ${styles.actionBtnDanger}`} onClick={() => openAction(u, "delete")}>Delete</button>
+                  </div>
+                )}
               </div>
             </Card>
           ))}
@@ -183,6 +308,21 @@ export default function Users() {
 
       <AddUserModal open={showAdd} onClose={() => setShowAdd(false)} onSuccess={handleCreated} />
       <CredentialsModal open={showCreds} onClose={() => { setShowCreds(false); setCreds(null); setNewUser(null); }} credentials={creds} user={newUser} />
+      <UserActionModal
+        open={!!action}
+        onClose={() => { setActionUser(null); setAction(null); }}
+        onSuccess={(pw) => handleActionSuccess(pw)}
+        user={actionUser}
+        action={action}
+      />
+      {pwResult && (
+        <ResetPasswordResultModal
+          open={!!pwResult}
+          onClose={() => setPwResult(null)}
+          password={pwResult}
+          userName={actionUser?.name || ""}
+        />
+      )}
     </div>
   );
 }

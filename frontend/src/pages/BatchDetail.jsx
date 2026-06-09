@@ -2,10 +2,93 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import QRCode from "qrcode";
 import api from "../api";
+import { useAuth } from "../hooks/useAuth";
 import { Card, StatusBadge, Button, Modal, Input, Textarea, Spinner, Badge, PageHeader } from "../components/Components";
 import styles from "./BatchDetail.module.css";
 
 const EVT_COLORS = { REGISTERED:"blue", TRANSFERRED:"amber", RECEIVED:"green", DISCREPANCY:"red", FLAGGED:"red", DISPENSED:"default" };
+
+function ChainMismatchPanel({ verif, batchId, onAcknowledge }) {
+  const { user } = useAuth();
+  const [expanded,    setExpanded]    = useState(false);
+  const [acknowledging, setAcknowledging] = useState(false);
+  const [notes,       setNotes]       = useState("");
+  const [error,       setError]       = useState(null);
+  const [done,        setDone]        = useState(false);
+
+  const isCMST = user?.role === "CMST";
+
+  async function handleAcknowledge() {
+    setAcknowledging(true); setError(null);
+    try {
+      await api.post(`/batches/${batchId}/acknowledge-mismatch`, {
+        reason: verif?.reason || "Hash mismatch detected",
+        notes: notes || "",
+        acknowledgedBy: user?.name || user?.wallet,
+      });
+      setDone(true);
+      onAcknowledge();
+    } catch (err) { setError(err.response?.data?.error || "Failed to acknowledge"); }
+    finally { setAcknowledging(false); }
+  }
+
+  if (done) return (
+    <div className={styles.chainVerified}>
+      <span className={styles.chainDot} />
+      Mismatch acknowledged and logged
+    </div>
+  );
+
+  return (
+    <div className={styles.mismatchPanel}>
+      <div className={styles.mismatchHeader}>
+        <span className={styles.chainDotRed} />
+        <span className={styles.mismatchTitle}>Chain verification failed</span>
+      </div>
+      <p className={styles.mismatchReason}>{verif?.reason || "Hash mismatch — record may have been altered"}</p>
+
+      <p className={styles.mismatchExplain}>
+        This can happen when records were migrated, the system was updated, or data was re-seeded.
+        If this batch's provenance is known to be valid, an admin can acknowledge and log the mismatch
+        to clear the warning.
+      </p>
+
+      {isCMST && !expanded && (
+        <button className={styles.mismatchExpandBtn} onClick={() => setExpanded(true)}>
+          Acknowledge mismatch →
+        </button>
+      )}
+
+      {isCMST && expanded && (
+        <div className={styles.mismatchForm}>
+          <textarea
+            className={styles.mismatchNotes}
+            placeholder="Optional: notes on why this mismatch is expected (e.g. system migration, data reseed)..."
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            rows={3}
+          />
+          {error && <p className={styles.mismatchError}>{error}</p>}
+          <div className={styles.mismatchActions}>
+            <button className={styles.mismatchCancelBtn} onClick={() => setExpanded(false)}>Cancel</button>
+            <button className={styles.mismatchConfirmBtn} onClick={handleAcknowledge} disabled={acknowledging}>
+              {acknowledging ? "Logging…" : "Confirm acknowledgement"}
+            </button>
+          </div>
+          <p className={styles.mismatchWarning}>
+            ⚠ Only acknowledge if you have verified this batch through other means.
+            This action is logged to the chain.
+          </p>
+        </div>
+      )}
+
+      {!isCMST && (
+        <p className={styles.mismatchAdminNote}>Contact a CMST admin to review and acknowledge this alert.</p>
+      )}
+    </div>
+  );
+}
+
 
 const ACTION_CONFIGS = {
   transfer: { title:"Log transfer out",    fields:[{ k:"quantity",          label:"Quantity dispatched",  type:"number",   ph:"1000" },{ k:"toLocation",      label:"Destination facility", type:"text",     ph:"Mzuzu DHO" },{ k:"notes",           label:"Notes",               type:"textarea", ph:"Transporter, vehicle, etc." }] },
@@ -277,11 +360,14 @@ export default function BatchDetail() {
 
         <Card className={styles.chainCard}>
           <p className={styles.sectionLabel}>Blockchain record</p>
-          <div className={`${styles.chainVerified} ${!chainOk ? styles.chainInvalid : ""}`}>
-            <span className={chainOk ? styles.chainDot : styles.chainDotRed} />
-            {chainOk ? "Chain intact — tamper-evident" : "Chain verification failed"}
-          </div>
-          {verif && !verif.valid && <p className={styles.chainWarnMsg}>{verif.reason}</p>}
+          {chainOk ? (
+            <div className={styles.chainVerified}>
+              <span className={styles.chainDot} />
+              Chain intact — tamper-evident
+            </div>
+          ) : (
+            <ChainMismatchPanel verif={verif} batchId={batch.batchId} onAcknowledge={load} />
+          )}
           {[["Total blocks", batch.history?.length||0],["Transfer legs",(batch.history||[]).filter(e=>e.eventType==="TRANSFERRED").length],["Dispenses",(batch.history||[]).filter(e=>e.eventType==="DISPENSED").length],["Discrepancies",(batch.history||[]).filter(e=>e.eventType==="DISCREPANCY").length]].map(([label,val])=>(
             <div key={label} className={styles.chainMeta}><span className={styles.infoLabel}>{label}</span><span className="mono">{val}</span></div>
           ))}

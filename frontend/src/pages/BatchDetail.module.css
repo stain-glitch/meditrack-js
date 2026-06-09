@@ -92,3 +92,21 @@
 .legDotPulse { width:8px;height:8px;border-radius:50%;background:var(--amber);animation:pulse 1.5s ease-in-out infinite; }
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
 .transitSummary { display:flex;gap:16px;font-size:.78rem;color:var(--text-3);padding-top:4px;border-top:1px solid var(--border);margin-top:4px; }
+/* Chain mismatch acknowledgement panel */
+.mismatchPanel { display:flex;flex-direction:column;gap:10px;padding:12px 14px;background:var(--red-light);border:1px solid #f5c0c0;border-radius:var(--radius); }
+.mismatchHeader { display:flex;align-items:center;gap:8px; }
+.mismatchTitle { font-size:.85rem;font-weight:500;color:var(--red); }
+.mismatchReason { font-size:.78rem;color:var(--red);margin:0; }
+.mismatchExplain { font-size:.78rem;color:var(--text-2);line-height:1.5;margin:0;padding-top:4px;border-top:1px solid #f5c0c0; }
+.mismatchExpandBtn { align-self:flex-start;font-size:.78rem;font-weight:500;color:var(--text-1);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:5px 12px;cursor:pointer;transition:all .12s; }
+.mismatchExpandBtn:hover { background:var(--surface-2); }
+.mismatchForm { display:flex;flex-direction:column;gap:8px; }
+.mismatchNotes { width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.8rem;color:var(--text-1);background:var(--surface);resize:vertical;font-family:inherit;box-sizing:border-box; }
+.mismatchNotes:focus { outline:none;border-color:var(--accent); }
+.mismatchActions { display:flex;gap:8px;justify-content:flex-end; }
+.mismatchCancelBtn { font-size:.8rem;padding:6px 14px;border:1px solid var(--border);background:var(--surface);border-radius:var(--radius);cursor:pointer;color:var(--text-2); }
+.mismatchConfirmBtn { font-size:.8rem;padding:6px 14px;border:none;background:var(--accent);color:#fff;border-radius:var(--radius);cursor:pointer;font-weight:500;transition:opacity .12s; }
+.mismatchConfirmBtn:disabled { opacity:.6;cursor:not-allowed; }
+.mismatchWarning { font-size:.72rem;color:var(--amber);margin:0;line-height:1.4; }
+.mismatchError { font-size:.78rem;color:var(--red);margin:0; }
+.mismatchAdminNote { font-size:.78rem;color:var(--text-3);margin:0;font-style:italic; }

@@ -107,4 +107,45 @@ router.post("/:id/dispense", auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// POST /api/batches/:id/acknowledge-mismatch — admin logs that a hash mismatch is known/expected
+router.post("/:id/acknowledge-mismatch", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "CMST")
+      return res.status(403).json({ error: "Only CMST admins can acknowledge mismatches" });
+
+    const batch = await chain.getBatch(req.params.id);
+    if (!batch) return res.status(404).json({ error: "Batch not found" });
+
+    const { reason, notes, acknowledgedBy } = req.body;
+    const { createBlock } = require("../blockchain/blockchain");
+    const { pool } = require("../models/db");
+
+    // Get last block hash to link into chain
+    const lastHashR = await pool.query(
+      "SELECT hash FROM chain_blocks WHERE batch_id=$1 ORDER BY id DESC LIMIT 1",
+      [req.params.id]
+    );
+    const lastHash = lastHashR.rows[0]?.hash || "0".repeat(64);
+
+    const block = createBlock(lastHash, {
+      type:           "MISMATCH_ACKNOWLEDGED",
+      batchId:        req.params.id,
+      reason:         reason || "Hash mismatch",
+      notes:          notes  || "",
+      acknowledgedBy: acknowledgedBy || req.user.name,
+      actor:          req.user.wallet,
+      actorName:      req.user.name,
+    });
+
+    const dataJson = JSON.stringify(block.data);
+    await pool.query(
+      `INSERT INTO chain_blocks (hash, previous_hash, timestamp, data, batch_id)
+       VALUES ($1,$2,$3,$4::jsonb,$5)`,
+      [block.hash, block.previousHash, block.timestamp, dataJson, req.params.id]
+    );
+
+    res.json({ message: "Mismatch acknowledged and logged to chain", blockHash: block.hash });
+  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;
