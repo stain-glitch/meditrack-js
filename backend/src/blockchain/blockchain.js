@@ -1,5 +1,5 @@
 /**
- * blockchain.js — MediTrack pure JS blockchain engine
+ * blockchain.js — MediTrack Hardhat & Solidity blockchain engine
  *
  * Each event is a SHA-256 block linked to the previous by hash.
  * Tamper detection: re-hash every block on read, compare with stored hash.
@@ -7,8 +7,24 @@
 
 const crypto = require("crypto");
 
+/**
+ * Serialize an object with sorted keys at every level.
+ * This ensures Postgres jsonb key reordering doesn't break hash verification.
+ */
+function sortedStringify(obj) {
+  return JSON.stringify(obj, (_, value) => {
+    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+      return Object.keys(value).sort().reduce((acc, k) => {
+        acc[k] = value[k];
+        return acc;
+      }, {});
+    }
+    return value;
+  });
+}
+
 function hashBlock(previousHash, timestamp, data) {
-  const content = JSON.stringify({ previousHash, timestamp, data });
+  const content = sortedStringify({ data, previousHash, timestamp });
   return crypto.createHash("sha256").update(content).digest("hex");
 }
 
@@ -51,7 +67,7 @@ const STATUS = {
   Dispensed: "Dispensed", Flagged: "Flagged",
 };
 
-// Business rules (replace Solidity modifiers)
+// Solidity modifiers
 function assertActive(user)  { if (!user || !user.active)  throw new Error("User not registered"); }
 function assertExists(batch) { if (!batch)                 throw new Error("Batch not found"); }
 function assertQty(batch, qty) {
@@ -59,4 +75,4 @@ function assertQty(batch, qty) {
     throw new Error(`Insufficient quantity: ${batch.remaining_quantity} available, ${qty} requested`);
 }
 
-module.exports = { createBlock, createGenesisBlock, verifyChain, hashBlock, EVENT_TYPES, STATUS, assertActive, assertExists, assertQty };
+module.exports = { createBlock, createGenesisBlock, verifyChain, hashBlock, sortedStringify, EVENT_TYPES, STATUS, assertActive, assertExists, assertQty };
