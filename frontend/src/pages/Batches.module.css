@@ -1,6 +1,10 @@
 .filters { display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap; }
-.search { padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);font-size:.85rem;color:var(--text-1);outline:none;width:240px;transition:border-color .12s; }
+.searchWrap { position:relative;display:flex;align-items:center;min-width:300px;flex:1;max-width:480px; }
+.searchIcon { position:absolute;left:10px;color:var(--text-3);pointer-events:none; }
+.search { padding:7px 34px 7px 32px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);font-size:.85rem;color:var(--text-1);outline:none;width:100%;transition:border-color .12s; }
 .search:focus { border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light); }
+.searchClear { position:absolute;right:8px;display:flex;align-items:center;justify-content:center;width:20px;height:20px;border:none;background:transparent;border-radius:50%;cursor:pointer;color:var(--text-3);transition:all .12s; }
+.searchClear:hover { background:var(--surface-2);color:var(--text-1); }
 .pills { display:flex;gap:6px;flex-wrap:wrap; }
 .pill { padding:5px 12px;border-radius:99px;border:1px solid var(--border);background:var(--surface);font-size:.78rem;color:var(--text-2);cursor:pointer;transition:all .12s; }
 .pill:hover  { border-color:var(--accent);color:var(--accent); }
@@ -18,3 +22,16 @@
 .row2 { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
 .actions { display:flex;justify-content:flex-end;gap:8px;margin-top:4px; }
 .error { font-size:.8rem;color:var(--red);background:var(--red-light);padding:8px 12px;border-radius:var(--radius); }
+
+/* Pill counts */
+.pillCount { display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:16px;padding:0 5px;background:rgba(255,255,255,.25);border-radius:99px;font-size:.68rem;font-weight:600;margin-left:4px; }
+.pill:not(.pillActive) .pillCount { background:var(--surface-2);color:var(--text-3); }
+
+/* Result count */
+.resultCount { font-size:.78rem;color:var(--text-3);margin:-8px 0 12px;padding-left:2px; }
+
+/* Sortable columns */
+.thSortable { cursor:pointer;user-select:none; }
+.thSortable:hover { color:var(--text-1); }
+.sortIcon { color:var(--text-3);font-size:.75rem;margin-left:3px; }
+.sortIconActive { color:var(--accent);font-size:.75rem;margin-left:3px; }

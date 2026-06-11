@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api";
 import { Card, StatusBadge, Button, Modal, Input, Select, Textarea, PageHeader, Spinner, Empty } from "../components/Components";
@@ -49,12 +49,20 @@ function RegisterModal({ open, onClose, onSuccess }) {
 
 const STATUSES = ["all","Registered","InTransit","Received","Flagged","Dispensed"];
 
+const STATUS_COUNTS = (batches) => STATUSES.slice(1).reduce((acc, s) => {
+  acc[s] = batches.filter(b => b.status === s).length;
+  return acc;
+}, {});
+
 export default function Batches() {
-  const [batches, setBatches] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [modal,   setModal]   = useState(false);
-  const [filter,  setFilter]  = useState("all");
-  const [search,  setSearch]  = useState("");
+  const [batches,    setBatches]    = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [modal,      setModal]      = useState(false);
+  const [filter,     setFilter]     = useState("all");
+  const [search,     setSearch]     = useState("");
+  const [sortBy,     setSortBy]     = useState("createdAt");
+  const [sortDir,    setSortDir]    = useState("desc");
+  const searchRef = useRef(null);
 
   async function load() {
     setLoading(true);
@@ -64,17 +72,56 @@ export default function Batches() {
 
   useEffect(() => { load(); }, []);
 
-  const visible = batches.filter(b => {
-    const okStatus = filter === "all" || b.status === filter;
-    const okSearch = !search || b.batchId.toLowerCase().includes(search.toLowerCase()) || b.medicineName.toLowerCase().includes(search.toLowerCase());
-    return okStatus && okSearch;
-  });
+  // Keyboard shortcut: Ctrl+F or / focuses the search bar
+  useEffect(() => {
+    function onKey(e) {
+      if ((e.key === "/" || (e.ctrlKey && e.key === "f")) && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+      if (e.key === "Escape") { setSearch(""); searchRef.current?.blur(); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  function toggleSort(col) {
+    if (sortBy === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortBy(col); setSortDir("asc"); }
+  }
+
+  const q = search.toLowerCase().trim();
+  const visible = batches
+    .filter(b => {
+      const okStatus = filter === "all" || b.status === filter;
+      const okSearch = !q
+        || b.batchId.toLowerCase().includes(q)
+        || b.medicineName.toLowerCase().includes(q)
+        || (b.manufacturer || "").toLowerCase().includes(q)
+        || (b.registeredBy || "").toLowerCase().includes(q)
+        || b.status.toLowerCase().includes(q);
+      return okStatus && okSearch;
+    })
+    .sort((a, b) => {
+      let av = a[sortBy], bv = b[sortBy];
+      if (typeof av === "string") av = av.toLowerCase(), bv = (bv||"").toLowerCase();
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+
+  const counts = STATUS_COUNTS(batches);
 
   function fmtExpiry(ts) {
     if (!ts) return "—";
     const isNear = ts * 1000 < Date.now() + 30*86400000;
     const str    = new Date(ts * 1000).toLocaleDateString("en-GB");
     return isNear ? <span style={{ color:"var(--amber)" }}>{str}</span> : str;
+  }
+
+  function SortIcon({ col }) {
+    if (sortBy !== col) return <span className={styles.sortIcon}>↕</span>;
+    return <span className={styles.sortIconActive}>{sortDir === "asc" ? "↑" : "↓"}</span>;
   }
 
   return (
@@ -86,15 +133,46 @@ export default function Batches() {
       />
 
       <div className={styles.filters}>
-        <input className={styles.search} placeholder="Search by ID or medicine..." value={search} onChange={e => setSearch(e.target.value)} />
+        <div className={styles.searchWrap}>
+          <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.4"/>
+            <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+          </svg>
+          <input
+            ref={searchRef}
+            className={styles.search}
+            placeholder="Search batches… (ID, medicine, manufacturer, status)"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className={styles.searchClear} onClick={() => { setSearch(""); searchRef.current?.focus(); }} title="Clear">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+          )}
+        </div>
         <div className={styles.pills}>
-          {STATUSES.map(s => (
-            <button key={s} className={`${styles.pill} ${filter === s ? styles.pillActive : ""}`} onClick={() => setFilter(s)}>
-              {s === "all" ? "All" : s}
+          <button className={`${styles.pill} ${filter==="all" ? styles.pillActive : ""}`} onClick={() => setFilter("all")}>
+            All <span className={styles.pillCount}>{batches.length}</span>
+          </button>
+          {STATUSES.slice(1).map(s => (
+            <button key={s} className={`${styles.pill} ${filter===s ? styles.pillActive : ""}`} onClick={() => setFilter(s)}>
+              {s} {counts[s] > 0 && <span className={styles.pillCount}>{counts[s]}</span>}
             </button>
           ))}
         </div>
       </div>
+
+      {search && (
+        <p className={styles.resultCount}>
+          {visible.length === 0
+            ? `No results for "${search}"`
+            : `${visible.length} result${visible.length !== 1 ? "s" : ""} for "${search}"`}
+          {visible.length > 0 && filter !== "all" && ` in ${filter}`}
+        </p>
+      )}
 
       <Card padding={false}>
         {loading ? (
@@ -104,7 +182,14 @@ export default function Batches() {
         ) : (
           <table className={styles.table}>
             <thead>
-              <tr><th>Batch ID</th><th>Medicine</th><th>Manufacturer</th><th>Units remaining</th><th>Status</th><th>Expiry</th></tr>
+              <tr>
+                <th className={styles.thSortable} onClick={() => toggleSort("batchId")}>Batch ID <SortIcon col="batchId"/></th>
+                <th className={styles.thSortable} onClick={() => toggleSort("medicineName")}>Medicine <SortIcon col="medicineName"/></th>
+                <th className={styles.thSortable} onClick={() => toggleSort("manufacturer")}>Manufacturer <SortIcon col="manufacturer"/></th>
+                <th className={styles.thSortable} onClick={() => toggleSort("remainingQuantity")}>Units remaining <SortIcon col="remainingQuantity"/></th>
+                <th className={styles.thSortable} onClick={() => toggleSort("status")}>Status <SortIcon col="status"/></th>
+                <th className={styles.thSortable} onClick={() => toggleSort("expiryDate")}>Expiry <SortIcon col="expiryDate"/></th>
+              </tr>
             </thead>
             <tbody>
               {visible.map(b => (
