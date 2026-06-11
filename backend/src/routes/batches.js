@@ -68,9 +68,43 @@ router.post("/", auth, async (req, res) => {
 
 router.post("/:id/transfer", auth, async (req, res) => {
   try {
-    const { quantity, toLocation, notes } = req.body;
-    const { block, batch } = await chain.transferBatch(req.user.wallet, req.params.id,
-      { quantity: Number(quantity), toLocation, notes });
+    const { quantity, toLocation, transporterWallet, receiverWallet, notes } = req.body;
+    const { pool } = require("../models/db");
+
+    // Resolve transporter name + vehicle
+    let transporterName = "", vehicleInfo = "";
+    if (transporterWallet) {
+      const tr = await pool.query(
+        `SELECT cu.name, tv.number_plate, tv.model
+         FROM chain_users cu
+         LEFT JOIN transporter_vehicles tv ON LOWER(tv.wallet)=LOWER(cu.wallet)
+         WHERE LOWER(cu.wallet)=LOWER($1)`, [transporterWallet]
+      );
+      if (tr.rows[0]) {
+        transporterName = tr.rows[0].name;
+        vehicleInfo = [tr.rows[0].number_plate, tr.rows[0].model].filter(Boolean).join(" · ");
+      }
+    }
+
+    // Resolve receiver name
+    let receiverName = "", receiverFacility = "";
+    if (receiverWallet) {
+      const rv = await pool.query(
+        "SELECT name, facility FROM chain_users WHERE LOWER(wallet)=LOWER($1)", [receiverWallet]
+      );
+      if (rv.rows[0]) { receiverName = rv.rows[0].name; receiverFacility = rv.rows[0].facility; }
+    }
+
+    const { block, batch } = await chain.transferBatch(req.user.wallet, req.params.id, {
+      quantity: Number(quantity),
+      toLocation: toLocation || receiverFacility || "",
+      transporterWallet: transporterWallet || "",
+      transporterName,
+      vehicleInfo,
+      receiverWallet: receiverWallet || "",
+      receiverName,
+      notes: notes || "",
+    });
     res.json({ message: "Transfer recorded", batch: fmt(batch), blockHash: block.hash });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -105,47 +139,6 @@ router.post("/:id/dispense", auth, async (req, res) => {
       { quantity: Number(quantity), location, notes });
     res.json({ message: "Dispensing recorded", batch: fmt(batch), blockHash: block.hash });
   } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// POST /api/batches/:id/acknowledge-mismatch — admin logs that a hash mismatch is known/expected
-router.post("/:id/acknowledge-mismatch", auth, async (req, res) => {
-  try {
-    if (req.user.role !== "CMST")
-      return res.status(403).json({ error: "Only CMST admins can acknowledge mismatches" });
-
-    const batch = await chain.getBatch(req.params.id);
-    if (!batch) return res.status(404).json({ error: "Batch not found" });
-
-    const { reason, notes, acknowledgedBy } = req.body;
-    const { createBlock } = require("../blockchain/blockchain");
-    const { pool } = require("../models/db");
-
-    // Get last block hash to link into chain
-    const lastHashR = await pool.query(
-      "SELECT hash FROM chain_blocks WHERE batch_id=$1 ORDER BY id DESC LIMIT 1",
-      [req.params.id]
-    );
-    const lastHash = lastHashR.rows[0]?.hash || "0".repeat(64);
-
-    const block = createBlock(lastHash, {
-      type:           "MISMATCH_ACKNOWLEDGED",
-      batchId:        req.params.id,
-      reason:         reason || "Hash mismatch",
-      notes:          notes  || "",
-      acknowledgedBy: acknowledgedBy || req.user.name,
-      actor:          req.user.wallet,
-      actorName:      req.user.name,
-    });
-
-    const dataJson = JSON.stringify(block.data);
-    await pool.query(
-      `INSERT INTO chain_blocks (hash, previous_hash, timestamp, data, batch_id)
-       VALUES ($1,$2,$3,$4::jsonb,$5)`,
-      [block.hash, block.previousHash, block.timestamp, dataJson, req.params.id]
-    );
-
-    res.json({ message: "Mismatch acknowledged and logged to chain", blockHash: block.hash });
-  } catch (err) { console.error(err); res.status(500).json({ error: err.message }); }
 });
 
 module.exports = router;

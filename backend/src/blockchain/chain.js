@@ -29,12 +29,10 @@ async function getLastHash(batchId) {
 }
 
 async function insertBlock(block, batchId) {
-  // Store data as JSON string so it round-trips cleanly through pg
-  const dataJson = JSON.stringify(block.data);
   const r = await pool.query(
     `INSERT INTO chain_blocks (hash, previous_hash, timestamp, data, batch_id)
-     VALUES ($1,$2,$3,$4::jsonb,$5) RETURNING id`,
-    [block.hash, block.previousHash, block.timestamp, dataJson, batchId || null]
+     VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+    [block.hash, block.previousHash, block.timestamp, block.data, batchId || null]
   );
   return r.rows[0].id;
 }
@@ -137,7 +135,7 @@ async function registerBatch(actorWallet, { batchId, medicineName, manufacturer,
 
 // ── Transfer ───────────────────────────────────────────────────────────────
 
-async function transferBatch(actorWallet, batchId, { quantity, toLocation, notes }) {
+async function transferBatch(actorWallet, batchId, { quantity, toLocation, transporterWallet, transporterName, vehicleInfo, receiverWallet, receiverName, notes }) {
   const actor = await getUser(actorWallet);
   assertActive(actor);
   const batch = await getBatch(batchId);
@@ -149,7 +147,13 @@ async function transferBatch(actorWallet, batchId, { quantity, toLocation, notes
   const lastHash = await getLastHash(batchId);
   const block    = createBlock(lastHash, {
     type: EVENT_TYPES.TRANSFERRED, batchId, quantity,
-    toLocation: toLocation || "", notes: notes || "",
+    toLocation:        toLocation        || "",
+    transporterWallet: transporterWallet || "",
+    transporterName:   transporterName   || "",
+    vehicleInfo:       vehicleInfo       || "",
+    receiverWallet:    receiverWallet    || "",
+    receiverName:      receiverName      || "",
+    notes:             notes             || "",
     actor: actorWallet.toLowerCase(), actorName: actor.name,
   });
   await insertBlock(block, batchId);
@@ -300,18 +304,12 @@ async function getRecentActivity(limit = 50) {
 // ── Row formatter ──────────────────────────────────────────────────────────
 
 function rowToBlock(row) {
-  // Ensure timestamp is always a plain integer (pg may return BIGINT as string)
-  const timestamp = parseInt(row.timestamp, 10);
-
-  // Ensure data is always a plain JS object, not a string
-  const data = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
-
   return {
     id:           row.id,
     hash:         row.hash,
     previousHash: row.previous_hash,
-    timestamp,
-    data,
+    timestamp:    Number(row.timestamp),
+    data:         typeof row.data === "string" ? JSON.parse(row.data) : row.data,
     batchId:      row.batch_id,
   };
 }

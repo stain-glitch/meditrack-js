@@ -4,8 +4,8 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   connectionTimeoutMillis: 5000,
   ssl: process.env.DATABASE_URL?.includes('localhost')
-    ? { rejectUnauthorized: false }
-    : false,
+    ? false
+    : { rejectUnauthorized: false },
 });
 pool.on("error", err => console.error("DB error:", err.message));
 
@@ -59,7 +59,18 @@ async function initDb() {
         created_at    TIMESTAMP DEFAULT NOW()
       );
       CREATE INDEX IF NOT EXISTS idx_blocks_batch ON chain_blocks(batch_id);
+      CREATE INDEX IF NOT EXISTS idx_blocks_batch ON chain_blocks(batch_id);
       CREATE INDEX IF NOT EXISTS idx_blocks_ts    ON chain_blocks(timestamp DESC);
+
+      CREATE TABLE IF NOT EXISTS transporter_vehicles (
+        id            SERIAL PRIMARY KEY,
+        wallet        VARCHAR(42) UNIQUE NOT NULL,
+        number_plate  VARCHAR(30) NOT NULL,
+        model         VARCHAR(100),
+        manufacturer  VARCHAR(100),
+        contract_type VARCHAR(50),
+        created_at    TIMESTAMP DEFAULT NOW()
+      );
 
       CREATE TABLE IF NOT EXISTS offline_queue (
         id         SERIAL PRIMARY KEY,

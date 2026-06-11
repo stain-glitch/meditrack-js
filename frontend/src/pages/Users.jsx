@@ -5,17 +5,22 @@ import { Card, RoleBadge, PageHeader, Spinner, Empty, Button, Modal, Input, Sele
 import styles from "./Users.module.css";
 
 function AddUserModal({ open, onClose, onSuccess }) {
-  const init = { name:"", role:"HSA", facility:"", password:"" };
+  const init = { name:"", role:"HSA", facility:"", password:"", vehicle:{ numberPlate:"", model:"", manufacturer:"", contractType:"" } };
   const [form, setForm]       = useState(init);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
+  const isTransporter = form.role === "Transporter";
+  const setV = k => e => setForm(f => ({ ...f, vehicle: { ...f.vehicle, [k]: e.target.value } }));
+
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true); setError(null);
     try {
-      const r = await api.post("/users", form);
+      const payload = { ...form };
+      if (!isTransporter) delete payload.vehicle;
+      const r = await api.post("/users", payload);
       onSuccess(r.data.credentials, r.data.user);
       onClose(); setForm(init);
     } catch (err) { setError(err.response?.data?.error || "Failed to create user"); }
@@ -31,6 +36,28 @@ function AddUserModal({ open, onClose, onSuccess }) {
         </Select>
         <Input label="Facility" value={form.facility} onChange={set("facility")} placeholder="e.g. Mzuzu District Hospital" />
         <Input label="Password (blank = meditrack123)" type="password" value={form.password} onChange={set("password")} placeholder="meditrack123" />
+
+        {isTransporter && (
+          <div className={styles.vehicleSection}>
+            <p className={styles.vehicleSectionTitle}>
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="1" y="5" width="14" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M4 5V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="1.3"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="11.5" cy="12" r="1" fill="currentColor"/></svg>
+              Vehicle details
+            </p>
+            <Input label="Number plate *" value={form.vehicle?.numberPlate||""} onChange={setV("numberPlate")} placeholder="e.g. MLA 1234" required={isTransporter} />
+            <div className={styles.vehicleRow}>
+              <Input label="Model" value={form.vehicle?.model||""} onChange={setV("model")} placeholder="e.g. Isuzu NPR" />
+              <Input label="Manufacturer" value={form.vehicle?.manufacturer||""} onChange={setV("manufacturer")} placeholder="e.g. Isuzu" />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Contract type</label>
+              <select className={styles.formSelect} value={form.vehicle?.contractType||""} onChange={setV("contractType")}>
+                <option value="">— Select —</option>
+                {["Government","Private","NGO/Donor","Subcontract","Emergency"].map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
+
         <div className={styles.noteBox}>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/><path d="M8 7v4M8 5.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
           <span>A unique wallet address will be generated automatically for this user.</span>
@@ -106,125 +133,35 @@ function CredentialsModal({ open, onClose, credentials, user }) {
   );
 }
 
-function UserActionModal({ open, onClose, onSuccess, user, action }) {
-  const [reason, setReason]   = useState("");
-  const [newPw,  setNewPw]    = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
-  const [result,  setResult]  = useState(null);
-
-  async function handleConfirm() {
-    setLoading(true); setError(null);
-    try {
-      let r;
-      if (action === "deactivate") {
-        r = await api.patch(`/users/${user.wallet}/deactivate`, { reason });
-      } else if (action === "reinstate") {
-        r = await api.patch(`/users/${user.wallet}/reinstate`);
-      } else if (action === "delete") {
-        r = await api.delete(`/users/${user.wallet}`);
-      } else if (action === "reset-password") {
-        r = await api.patch(`/users/${user.wallet}/reset-password`, { newPassword: newPw });
-        setResult(r.data.newPassword);
-        onSuccess(); return;
-      }
-      onSuccess(); onClose();
-    } catch (err) { setError(err.response?.data?.error || "Action failed"); }
-    finally { setLoading(false); }
-  }
-
-  if (!user) return null;
-
-  const configs = {
-    deactivate:     { title:"Deactivate account",   color:"var(--amber)", desc:`${user.name} will be suspended and unable to log in. You can reinstate them later.` },
-    reinstate:      { title:"Reinstate account",    color:"var(--accent)", desc:`${user.name}'s account will be reactivated and they will be able to log in again.` },
-    delete:         { title:"Delete account",       color:"var(--red)",   desc:`This will permanently delete ${user.name}'s account and cannot be undone.` },
-    "reset-password":{ title:"Reset password",      color:"var(--blue)",  desc:`A new password will be set for ${user.name}. Leave blank to use the default (meditrack123).` },
-  };
-  const cfg = configs[action] || {};
-
-  return (
-    <Modal open={open} onClose={onClose} title={cfg.title} width={460}>
-      <div className={styles.actionModalBody}>
-        <div className={styles.actionModalUser}>
-          <div className={styles.avatar} style={{ background: cfg.color + "18", color: cfg.color, width:44, height:44 }}>
-            {user.name?.charAt(0)}
-          </div>
-          <div>
-            <div className={styles.name}>{user.name}</div>
-            <div className={styles.facility}>{user.facility || user.role}</div>
-          </div>
-        </div>
-        <p className={styles.actionModalDesc}>{cfg.desc}</p>
-        {action === "deactivate" && (
-          <Input label="Reason (optional)" value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Staff on leave, account misuse..." />
-        )}
-        {action === "reset-password" && (
-          <Input label="New password (blank = meditrack123)" type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="meditrack123" />
-        )}
-        {error && <p className={styles.error}>{error}</p>}
-        <div className={styles.formActions}>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button
-            variant={action === "delete" ? "danger" : "primary"}
-            loading={loading}
-            onClick={handleConfirm}
-          >
-            {cfg.title}
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-function ResetPasswordResultModal({ open, onClose, password, userName }) {
-  const [copied, setCopied] = useState(false);
-  function copy() {
-    navigator.clipboard.writeText(password).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
-  }
-  return (
-    <Modal open={open} onClose={onClose} title="Password reset" width={400}>
-      <div className={styles.credBody}>
-        <p style={{ fontSize:".85rem", color:"var(--text-2)" }}>New password for <strong>{userName}</strong>:</p>
-        <div className={styles.credField}>
-          <div className={styles.credValue}>
-            <span className={styles.credValueText}>{password}</span>
-            <button className={`${styles.copyBtn} ${copied ? styles.copyBtnDone : ""}`} onClick={copy} type="button">
-              {copied
-                ? <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                : <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="5" y="1" width="9" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M11 12v2a1.5 1.5 0 0 1-1.5 1.5H2A1.5 1.5 0 0 1 .5 12.5v-8A1.5 1.5 0 0 1 2 3h2" stroke="currentColor" strokeWidth="1.3"/></svg>
-              }
-            </button>
-          </div>
-        </div>
-        <div className={styles.formActions}><Button onClick={onClose}>Done</Button></div>
-      </div>
-    </Modal>
-  );
-}
-
-const ROLES       = ["All","CMST","Pharmacist","HSA","Transporter","Regulator"];
+const ROLES      = ["All","CMST","Pharmacist","HSA","Transporter","Regulator"];
 const ROLE_COLORS = { CMST:"#1a6b4a", Pharmacist:"#1a4a8a", HSA:"#92580a", Transporter:"#5f5e5a", Regulator:"#a02020" };
 
 export default function Users() {
   const { user: currentUser } = useAuth();
-  const [users,     setUsers]     = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [filter,    setFilter]    = useState("All");
-  const [showAdd,   setShowAdd]   = useState(false);
-  const [creds,     setCreds]     = useState(null);
-  const [newUser,   setNewUser]   = useState(null);
-  const [showCreds, setShowCreds] = useState(false);
-  const [actionUser,setActionUser]= useState(null);
-  const [action,    setAction]    = useState(null);
-  const [pwResult,  setPwResult]  = useState(null);
+  const [users,    setUsers]  = useState([]);
+  const [loading,  setLoading] = useState(true);
+  const [filter,   setFilter]  = useState("All");
+  const [showAdd,  setShowAdd] = useState(false);
+  const [creds,    setCreds]   = useState(null);
+  const [newUser,  setNewUser] = useState(null);
+  const [showCreds,setShowCreds] = useState(false);
 
   const isCMST = currentUser?.role === "CMST";
 
   async function load() {
     setLoading(true);
-    try { const r = await api.get("/users"); setUsers(r.data.users); }
+    try {
+      const [usersRes, vehiclesRes] = await Promise.all([
+        api.get("/users"),
+        api.get("/users/transporters/vehicles"),
+      ]);
+      const vehicleMap = {};
+      (vehiclesRes.data.transporters || []).forEach(t => { vehicleMap[t.wallet] = t; });
+      const merged = usersRes.data.users.map(u => ({
+        ...u, vehicle: vehicleMap[u.wallet] || null,
+      }));
+      setUsers(merged);
+    }
     catch (e) { console.error(e); } finally { setLoading(false); }
   }
 
@@ -232,16 +169,6 @@ export default function Users() {
 
   function handleCreated(credentials, user) {
     setCreds(credentials); setNewUser(user); setShowCreds(true); load();
-  }
-
-  function openAction(user, act) { setActionUser(user); setAction(act); }
-
-  function handleActionSuccess(resetPw) {
-    load();
-    if (action === "reset-password" && resetPw) {
-      setPwResult(resetPw);
-    }
-    setActionUser(null); setAction(null);
   }
 
   const visible = filter === "All" ? users : users.filter(u => u.role === filter);
@@ -273,15 +200,12 @@ export default function Users() {
       ) : (
         <div className={styles.grid}>
           {visible.map(u => (
-            <Card key={u.wallet} className={`${styles.userCard} ${u.active === false ? styles.userCardInactive : ""}`}>
+            <Card key={u.wallet} className={styles.userCard}>
               <div className={styles.avatar} style={{ background:(ROLE_COLORS[u.role]||"#888")+"18", color:ROLE_COLORS[u.role]||"#888" }}>
                 {u.name.charAt(0).toUpperCase()}
               </div>
               <div className={styles.info}>
-                <div className={styles.nameRow}>
-                  <span className={styles.name}>{u.name}</span>
-                  {u.active === false && <span className={styles.inactiveTag}>Suspended</span>}
-                </div>
+                <span className={styles.name}>{u.name}</span>
                 <span className={styles.facility}>{u.facility || "—"}</span>
                 <div className={styles.bottom}>
                   <RoleBadge role={u.role} />
@@ -289,15 +213,15 @@ export default function Users() {
                     {u.wallet.slice(0,8)}…{u.wallet.slice(-4)}
                   </span>
                 </div>
-                {isCMST && u.wallet !== currentUser?.wallet && (
-                  <div className={styles.userActions}>
-                    {u.active !== false ? (
-                      <button className={styles.actionBtn} onClick={() => openAction(u, "deactivate")}>Suspend</button>
-                    ) : (
-                      <button className={`${styles.actionBtn} ${styles.actionBtnGreen}`} onClick={() => openAction(u, "reinstate")}>Reinstate</button>
-                    )}
-                    <button className={styles.actionBtn} onClick={() => openAction(u, "reset-password")}>Reset password</button>
-                    <button className={`${styles.actionBtn} ${styles.actionBtnDanger}`} onClick={() => openAction(u, "delete")}>Delete</button>
+                {u.role === "Transporter" && u.vehicle?.number_plate && (
+                  <div className={styles.vehicleTags}>
+                    {[
+                      u.vehicle.number_plate && `🚛 ${u.vehicle.number_plate}`,
+                      u.vehicle.model        && u.vehicle.model,
+                      u.vehicle.contract_type && u.vehicle.contract_type,
+                    ].filter(Boolean).map((tag, i) => (
+                      <span key={i} className={styles.vehicleTag}>{tag}</span>
+                    ))}
                   </div>
                 )}
               </div>
@@ -308,21 +232,6 @@ export default function Users() {
 
       <AddUserModal open={showAdd} onClose={() => setShowAdd(false)} onSuccess={handleCreated} />
       <CredentialsModal open={showCreds} onClose={() => { setShowCreds(false); setCreds(null); setNewUser(null); }} credentials={creds} user={newUser} />
-      <UserActionModal
-        open={!!action}
-        onClose={() => { setActionUser(null); setAction(null); }}
-        onSuccess={(pw) => handleActionSuccess(pw)}
-        user={actionUser}
-        action={action}
-      />
-      {pwResult && (
-        <ResetPasswordResultModal
-          open={!!pwResult}
-          onClose={() => setPwResult(null)}
-          password={pwResult}
-          userName={actionUser?.name || ""}
-        />
-      )}
     </div>
   );
 }

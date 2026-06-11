@@ -37,18 +37,17 @@
 .credActions { display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px; }
 .copyAllBtn { font-size:.82rem;color:var(--text-2);background:none;border:1px solid var(--border);border-radius:var(--radius);padding:7px 12px;cursor:pointer;transition:all .12s; }
 .copyAllBtn:hover { background:var(--surface-2);color:var(--text-1); }
-/* User action menu */
-.userCardInactive { opacity:.65; }
-.nameRow { display:flex;align-items:center;gap:7px; }
-.inactiveTag { font-size:.65rem;font-weight:500;padding:1px 7px;background:var(--amber-light);color:var(--amber);border-radius:99px;text-transform:uppercase;letter-spacing:.04em; }
-.userActions { display:flex;gap:6px;margin-top:8px;flex-wrap:wrap; }
-.actionBtn { font-size:.72rem;padding:3px 9px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;transition:all .12s; }
-.actionBtn:hover { background:var(--surface-2);border-color:var(--text-3);color:var(--text-1); }
-.actionBtnGreen { border-color:var(--accent);color:var(--accent); }
-.actionBtnGreen:hover { background:var(--accent-light); }
-.actionBtnDanger { border-color:var(--red);color:var(--red); }
-.actionBtnDanger:hover { background:var(--red-light); }
-/* User action modal */
-.actionModalBody { display:flex;flex-direction:column;gap:14px; }
-.actionModalUser { display:flex;align-items:center;gap:12px; }
-.actionModalDesc { font-size:.85rem;color:var(--text-2);line-height:1.5;margin:0; }
+
+/* Vehicle section in Add User modal */
+.vehicleSection { display:flex;flex-direction:column;gap:10px;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius); }
+.vehicleSectionTitle { display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin:0 0 2px; }
+.vehicleRow { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+.formGroup { display:flex;flex-direction:column;gap:5px; }
+.formLabel { font-size:.78rem;font-weight:500;color:var(--text-2); }
+.formOptional { font-weight:400;color:var(--text-3); }
+.formSelect { padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:.85rem;color:var(--text-1);background:var(--surface);cursor:pointer;width:100%; }
+.formSelect:focus { outline:none;border-color:var(--accent); }
+
+/* Vehicle tags on user card */
+.vehicleTags { display:flex;flex-wrap:wrap;gap:5px;margin-top:6px; }
+.vehicleTag { font-size:.7rem;padding:2px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:99px;color:var(--text-2); }
